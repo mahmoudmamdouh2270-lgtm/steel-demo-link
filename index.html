@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>نسخة عرض</title>
+<style>body{font-family:sans-serif;text-align:center;padding:20vh 16px 0;background:#f6f5f2;color:#333}a{color:#017e84;font-size:1.2rem}p.err{color:#b45309}a#fallback{display:inline-block;padding:12px 40px;background:#017e84;color:#fff;border-radius:8px;text-decoration:none}</style>
+</head>
+<body>
+<p id="msg">جاري تجهيز الرابط...</p>
+<p><a id="fallback" href="https://andrea-passed-motorcycle-pierre.trycloudflare.com">ادخل</a></p>
+<p style="color:#999;font-size:.85rem">لو اللينك لا يعمل فجهاز الاستضافة مغلق حاليًا — جرّب لاحقًا.</p>
+<script>
+// الرابط الحالي يُقرأ من target.txt عبر GitHub API بلا كاش — صفحات Pages تُكاش
+// حتى 10 دقائق فكان المتصفح يحوّل لتانل جلسة قديمة ميّت بعد إعادة التشغيل.
+(async function () {
+  try {
+    const res = await fetch(
+      "https://api.github.com/repos/mahmoudmamdouh2270-lgtm/steel-demo-link/contents/target.txt",
+      { cache: "no-store", headers: { Accept: "application/vnd.github.raw" } }
+    );
+    if (!res.ok) throw new Error(res.status);
+    const url = (await res.text()).trim();
+    if (!/^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/.test(url)) throw new Error("bad target");
+    document.getElementById("fallback").href = url;
+    document.getElementById("msg").textContent = "الرابط جاهز — اضغط «ادخل» للدخول.";
+  } catch (e) {
+    // فشل القراءة: الرابط المخبوز بالصفحة (آخر جلسة معروفة) يبقى مخرجًا يدويًا
+    document.getElementById("msg").textContent = "تعذّر جلب الرابط الحالي تلقائيًا — جرّب الرابط اليدوي بالأسفل.";
+    document.getElementById("msg").className = "err";
+  }
+})();
+</script>
+</body>
+</html>
