@@ -4,32 +4,63 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>نسخة عرض</title>
-<style>body{font-family:sans-serif;text-align:center;padding:20vh 16px 0;background:#f6f5f2;color:#333}a{color:#017e84;font-size:1.2rem}p.err{color:#b45309}a#fallback{display:inline-block;padding:12px 40px;background:#017e84;color:#fff;border-radius:8px;text-decoration:none}</style>
+<style>body{font-family:sans-serif;text-align:center;padding:20vh 16px 0;background:#f6f5f2;color:#333}a{color:#017e84;font-size:1.2rem}p.err{color:#b45309}a#enter{display:inline-block;padding:12px 40px;background:#017e84;color:#fff;border-radius:8px;text-decoration:none}</style>
 </head>
 <body>
-<p id="msg">جاري تجهيز الرابط...</p>
-<p><a id="fallback" href="https://troops-bucks-tablet-apply.trycloudflare.com">ادخل</a></p>
-<p style="color:#999;font-size:.85rem">لو اللينك لا يعمل فجهاز الاستضافة مغلق حاليًا — جرّب لاحقًا.</p>
+<p id="msg">اضغط «ادخل» للدخول على البرنامج.</p>
+<p><a id="enter" href="https://politicians-strict-fluid-towers.trycloudflare.com">ادخل</a></p>
 <script>
-// الرابط الحالي يُقرأ من target.txt عبر GitHub API بلا كاش — صفحات Pages تُكاش
-// حتى 10 دقائق فكان المتصفح يحوّل لتانل جلسة قديمة ميّت بعد إعادة التشغيل.
-(async function () {
+// الرابط الحاليّ في target.txt بيتقري من GitHub API من غير كاش (صفحات Pages بتتكاش لحدّ 10 دقايق، فكان المتصفّح
+// بيحوّل لتانل قديم ميّت بعد الريستارت). وبيتقري تاني مع كل ضغطة، علشان الرابط بيتغيّر لو التانل اتعمله ريستارت.
+// قبل التحويل بنحمّل favicon.svg من البرنامج نفسه: لو التانل واقع أو البرنامج بيتحدّث، كلاودفلير بيرجّع صفحة HTML مش صورة،
+// فالتحميل بيفشل ونعرض رسالة التحديث بدل صفحة الخطأ.
+const REPO_TARGET = "https://api.github.com/repos/mahmoudmamdouh2270-lgtm/steel-demo-link/contents/target.txt";
+const PROBE_TIMEOUT_MS = 10000;
+const msg = document.getElementById("msg");
+const enter = document.getElementById("enter");
+let busy = false;
+
+async function currentTarget() {
   try {
-    const res = await fetch(
-      "https://api.github.com/repos/mahmoudmamdouh2270-lgtm/steel-demo-link/contents/target.txt",
-      { cache: "no-store", headers: { Accept: "application/vnd.github.raw" } }
-    );
-    if (!res.ok) throw new Error(res.status);
+    const res = await fetch(REPO_TARGET, { cache: "no-store", headers: { Accept: "application/vnd.github.raw" } });
+    if (!res.ok) throw new Error(String(res.status));
     const url = (await res.text()).trim();
     if (!/^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/.test(url)) throw new Error("bad target");
-    document.getElementById("fallback").href = url;
-    document.getElementById("msg").textContent = "الرابط جاهز — اضغط «ادخل» للدخول.";
+    return url;
   } catch (e) {
-    // فشل القراءة: الرابط المخبوز بالصفحة (آخر جلسة معروفة) يبقى مخرجًا يدويًا
-    document.getElementById("msg").textContent = "تعذّر جلب الرابط الحالي تلقائيًا — جرّب الرابط اليدوي بالأسفل.";
-    document.getElementById("msg").className = "err";
+    return enter.getAttribute("href");
   }
-})();
+}
+
+function isUp(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const timer = setTimeout(() => { img.src = ""; resolve(false); }, PROBE_TIMEOUT_MS);
+    img.onload = () => { clearTimeout(timer); resolve(true); };
+    img.onerror = () => { clearTimeout(timer); resolve(false); };
+    img.src = url + "/favicon.svg?probe=" + Date.now();
+  });
+}
+
+function show(text, isError) {
+  msg.textContent = text;
+  msg.className = isError ? "err" : "";
+}
+
+enter.addEventListener("click", async (event) => {
+  event.preventDefault();
+  if (busy) return;
+  busy = true;
+  show("بنتأكّد إنّ البرنامج شغّال…", false);
+  const url = await currentTarget();
+  if (await isUp(url)) {
+    window.location.href = url;
+    return;
+  }
+  show("البرنامج في أعمال تحديث دلوقتي. جرّب تاني بعد دقايق.", true);
+  enter.textContent = "جرّب تاني";
+  busy = false;
+});
 </script>
 </body>
 </html>
